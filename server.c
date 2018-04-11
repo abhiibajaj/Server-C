@@ -73,73 +73,97 @@ int main(int argc, char **argv)
 
 	/* Accept a connection - block until a connection is ready to
 	 be accepted. Get back a new file descriptor to communicate on. */
+	while(1){
+		newsockfd = accept(	sockfd, (struct sockaddr *)NULL, 
+							NULL);
 
-	newsockfd = accept(	sockfd, (struct sockaddr *)NULL, 
-						NULL);
+		if (newsockfd < 0) 
+		{
+			perror("ERROR on accept");
+			exit(1);
+		}
 
-	if (newsockfd < 0) 
-	{
-		perror("ERROR on accept");
-		exit(1);
+		
+		bzero(buffer,2006);
+
+		/* Read characters from the connection,
+			then process */
+		
+		n = read(newsockfd, buffer, 2005);
+
+
+		if (n < 0) 
+		{
+			perror("ERROR reading from socket");
+			exit(1);
+		}
+		
+
+		
+		int inputLength = strlen(buffer);
+		char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
+		strncpy(inputCopy, buffer, inputLength);
+
+		const char *delimitter = " ";
+		
+		char *get;
+		char *path;
+		
+
+		get = strtok(buffer, delimitter);
+		path = strtok(NULL, delimitter);
+		char *final_path = malloc(strlen(absolute_path)+strlen(path)+1);
+
+		strcpy(final_path, absolute_path);
+		strcat(final_path, path);
+		fprintf(stderr, "%s\n", get);
+	    fprintf(stderr, "%s\n", final_path);
+	  
+	    char *wrong = "HTTP/1.0 404\n";
+	    char *right = "HTTP/1.0 200 OK\n";
+
+	   	FILE *fp;
+	   	if((fp = fopen(final_path, "r"))==NULL){
+	   		
+	   		n =write(newsockfd, wrong, strlen(wrong));
+	   		fprintf(stderr, "DOES NOT EXISTS");
+
+	   	} else {
+	   		char *context;
+	   		char *type_delimitter = ".";
+	   		char *file_type =  strtok_r(final_path, type_delimitter, &context);
+	   		
+	   		n =write(newsockfd, right, strlen(right));
+	   		n =write(newsockfd, "HELLO", 5);
+	   		char *content_header = "Content-Type: ";
+
+	   		
+	   		if(strcmp(context, "css")==0){
+	   			n =write(newsockfd, content_header, strlen(content_header));
+	   			char *content_type = "text/css";
+	   			n = write(newsockfd, content_type, strlen(content_type));
+	   		}
+	   		
+	   	
+	   	}
+	    
+
+
+
+
+	    
+		
+		
+		if (n < 0) 
+		{
+			perror("ERROR writing to socket");
+			exit(1);
+		}
+		
+		/* close socket */
+		
+		
+		close(newsockfd);
 	}
-	
-	bzero(buffer,2006);
-
-	/* Read characters from the connection,
-		then process */
-	
-	n = read(newsockfd, buffer, 2005);
-
-
-	if (n < 0) 
-	{
-		perror("ERROR reading from socket");
-		exit(1);
-	}
-	
-
-	
-	int inputLength = strlen(buffer);
-	char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
-	strncpy(inputCopy, buffer, inputLength);
-
-	const char delimitter[] = " ";
-	
-	char *get;
-	char *path;
-
-	get = strtok(buffer, delimitter);
-	path = strtok(NULL, delimitter);
-	char *final_path = malloc(strlen(absolute_path)+strlen(path)+1);
-
-	strcpy(final_path, absolute_path);
-	strcat(final_path, path);
-	fprintf(stderr, "%s\n", get);
-    fprintf(stderr, "%s\n", final_path);
-   	FILE *fp;
-   	if((fp == fopen(final_path, "r"))==NULL){
-   		fprintf(stderr, "EXISTS");
-   	} else {
-   		fprintf(stderr, "NO EXIST");
-   	}
-    char *status = (char *) malloc(1 * sizeof(char));
-
-
-
-
-    	
-  	
-	
-	
-	if (n < 0) 
-	{
-		perror("ERROR writing to socket");
-		exit(1);
-	}
-	
-	/* close socket */
-	
-	
-	
 	return 0; 
 }
