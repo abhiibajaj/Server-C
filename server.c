@@ -107,12 +107,21 @@ int main(int argc, char **argv)
 	
 	char *get;
 	char *path;
+
 	get = strtok(buffer, delimitter);
 	path = strtok(NULL, delimitter);
+	char *final_path = malloc(strlen(absolute_path)+strlen(path)+1);
 
-	fprintf(stderr, "%s\n", absolute_path);
-    fprintf(stderr, "%s\n", get);
-    fprintf(stderr, "%s\n", path);
+	strcpy(final_path, absolute_path);
+	strcat(final_path, path);
+	fprintf(stderr, "%s\n", get);
+    fprintf(stderr, "%s\n", final_path);
+   	FILE *fp;
+   	if((fp == fopen(final_path, "r"))==NULL){
+   		fprintf(stderr, "EXISTS");
+   	} else {
+   		fprintf(stderr, "NO EXIST");
+   	}
     char *status = (char *) malloc(1 * sizeof(char));
 
 
