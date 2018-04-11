@@ -136,12 +136,26 @@ int main(int argc, char **argv)
 	   		n =write(newsockfd, right, strlen(right));
 	   		n =write(newsockfd, "HELLO", 5);
 	   		char *content_header = "Content-Type: ";
-
+	   		n =write(newsockfd, content_header, strlen(content_header));
 	   		
 	   		if(strcmp(context, "css")==0){
-	   			n =write(newsockfd, content_header, strlen(content_header));
+	   			
 	   			char *content_type = "text/css";
 	   			n = write(newsockfd, content_type, strlen(content_type));
+	   		} else if(strcmp(context, "html")==0){
+	   			char *content_type = "text/html";
+	   			n = write(newsockfd, content_type, strlen(content_type));
+
+	   		} else if(strcmp(context, "jpg")==0){
+	   			char *content_type = "image/jpeg";
+	   			n = write(newsockfd, content_type, strlen(content_type));
+
+	   		} else if(strcmp(context, "js")==0){
+	   			char *content_type = "application/javascript";
+	   			n = write(newsockfd, content_type, strlen(content_type));
+
+	   		} else {
+	   			fprintf(stderr, "Not supported \n");
 	   		}
 	   		
 	   	
