@@ -143,6 +143,22 @@ int main(int argc, char **argv)
 	   			char *content_type = "text/css\r\n\r\n";
 	   			fprintf(stderr, "%s", content_type);
 	   			n = write(newsockfd, content_type, strlen(content_type));
+	   			unsigned char *text;
+	   			
+	   			fseek(fp, 0L, SEEK_END);
+	   			unsigned long file_size = ftell(fp);
+	   			rewind(fp);
+	   			text = calloc(1, file_size+1);
+	   			
+	   			if(fread(text, file_size, 1, fp)!=1){
+	   				fprintf(stderr, "WRONG");
+	   			}
+
+	   			n = write(newsockfd, text, strlen(text));
+	   			fprintf(stderr, "%s\r\n", text);
+
+	   			
+	   			fprintf(stderr, "%s\r\n", text);
 	   		} else if(strcmp(context, "html")==0){
 	   			char *content_type = "text/html\r\n\r\n";
 	   			n = write(newsockfd, content_type, strlen(content_type));
@@ -168,12 +184,36 @@ int main(int argc, char **argv)
 	   			char *content_type = "image/jpeg\r\n\r\n";
 	   			fprintf(stderr, "%s", content_type);
 	   			n = write(newsockfd, content_type, strlen(content_type));
+	   			unsigned char *text;
+	   			
+	   			fseek(fp, 0L, SEEK_END);
+	   			unsigned long file_size = ftell(fp);
+	   			rewind(fp);
+	   			text = calloc(1, file_size+1);
+	   			
+	   			if(fread(text, file_size, 1, fp)!=1){
+	   				fprintf(stderr, "WRONG");
+	   			}
 
+	   			n = write(newsockfd, text, file_size);
+	   			fprintf(stderr, "%s\r\n", text);
 	   		} else if(strcmp(context, "js")==0){
 	   			char *content_type = "application/javascript\r\n\r\n";
 	   			fprintf(stderr, "%s", content_type);
 	   			n = write(newsockfd, content_type, strlen(content_type));
+	   			unsigned char *text;
+	   			
+	   			fseek(fp, 0L, SEEK_END);
+	   			unsigned long file_size = ftell(fp);
+	   			rewind(fp);
+	   			text = calloc(1, file_size+1);
+	   			
+	   			if(fread(text, file_size, 1, fp)!=1){
+	   				fprintf(stderr, "WRONG");
+	   			}
 
+	   			n = write(newsockfd, text, strlen(text));
+	   			fprintf(stderr, "%s\r\n", text);
 	   		} else {
 	   			fprintf(stderr, "Not supported \n");
 	   		}
