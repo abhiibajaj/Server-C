@@ -116,17 +116,16 @@ int main(int argc, char **argv)
 
 		strcpy(final_path, absolute_path);
 		strcat(final_path, path);
-		fprintf(stderr, "%s\n", get);
-	    fprintf(stderr, "%s\n", final_path);
+		
 	  
-	    char *wrong = "HTTP/1.0 404\n";
-	    char *right = "HTTP/1.0 200 OK\n";
+	    char *wrong = "HTTP/1.0 404\r\n";
+	    char *right = "HTTP/1.0 200 OK\r\n";
 
 	   	FILE *fp;
 	   	if((fp = fopen(final_path, "r"))==NULL){
 	   		
 	   		n =write(newsockfd, wrong, strlen(wrong));
-	   		fprintf(stderr, "DOES NOT EXISTS");
+	   		
 
 	   	} else {
 	   		char *context;
@@ -134,24 +133,45 @@ int main(int argc, char **argv)
 	   		char *file_type =  strtok_r(final_path, type_delimitter, &context);
 	   		
 	   		n =write(newsockfd, right, strlen(right));
-	   		n =write(newsockfd, "HELLO", 5);
+	   		fprintf(stderr, "%s", right);
 	   		char *content_header = "Content-Type: ";
 	   		n =write(newsockfd, content_header, strlen(content_header));
-	   		
+	   		fprintf(stderr, "%s", content_header);
+	   		int characs =0;
 	   		if(strcmp(context, "css")==0){
 	   			
-	   			char *content_type = "text/css";
+	   			char *content_type = "text/css\r\n\r\n";
+	   			fprintf(stderr, "%s", content_type);
 	   			n = write(newsockfd, content_type, strlen(content_type));
 	   		} else if(strcmp(context, "html")==0){
-	   			char *content_type = "text/html";
+	   			char *content_type = "text/html\r\n\r\n";
 	   			n = write(newsockfd, content_type, strlen(content_type));
+	   			fprintf(stderr, "%s", content_type);
+	   			unsigned char *text;
+	   			
+	   			fseek(fp, 0L, SEEK_END);
+	   			unsigned long file_size = ftell(fp);
+	   			rewind(fp);
+	   			text = calloc(1, file_size+1);
+	   			
+	   			if(fread(text, file_size, 1, fp)!=1){
+	   				fprintf(stderr, "WRONG");
+	   			}
+
+	   			n = write(newsockfd, text, strlen(text));
+
+	   			
+	   			fprintf(stderr, "%s\r\n", text);
+	   			
 
 	   		} else if(strcmp(context, "jpg")==0){
-	   			char *content_type = "image/jpeg";
+	   			char *content_type = "image/jpeg\r\n\r\n";
+	   			fprintf(stderr, "%s", content_type);
 	   			n = write(newsockfd, content_type, strlen(content_type));
 
 	   		} else if(strcmp(context, "js")==0){
-	   			char *content_type = "application/javascript";
+	   			char *content_type = "application/javascript\r\n\r\n";
+	   			fprintf(stderr, "%s", content_type);
 	   			n = write(newsockfd, content_type, strlen(content_type));
 
 	   		} else {
@@ -176,8 +196,8 @@ int main(int argc, char **argv)
 		
 		/* close socket */
 		
-		
 		close(newsockfd);
+		
 	}
 	return 0; 
 }

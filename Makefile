@@ -2,7 +2,7 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -std=gnu99 -I. -O3
 OBJ = server.o 
-EXE = server
+EXE = my_server
 
 ##Create .o files from .c files. Searches for .c files with same .o names given in OBJ
 %.o: %.c $(DEPS)
