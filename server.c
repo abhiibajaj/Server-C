@@ -14,6 +14,7 @@ The port number is passed as an argument
 #include <unistd.h>
 
 #define BUFFER_SIZE 2048
+#define RUNNING 1
 
 #define HTTPNOTFOUND "HTTP/1.0 404\r\n"
 #define HTTPFOUND "HTTP/1.0 200 OK\r\n"
@@ -96,7 +97,7 @@ int main(int argc, char **argv) {
 
 	/* Accept a connection - block until a connection is ready to
 	 be accepted. Get back a new file descriptor to communicate on. */
-	while(1){
+	while(RUNNING){
 
 		newsockfd = accept(	sockfd, (struct sockaddr *)NULL, 
 							NULL);
