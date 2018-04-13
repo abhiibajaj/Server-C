@@ -13,13 +13,22 @@ The port number is passed as an argument
 #include <netinet/in.h>
 #include <unistd.h>
 
+#define BUFFER_SIZE 2048
+#define HTMLCONTENT "text/html\r\n\r\n"
+#define CSSCONTENT "text/css\r\n\r\n"
+#define JPGCONTENT "image/jpeg\r\n\r\n"
+#define JSCONTENT "application/javascript\r\n\r\n"
 
-int main(int argc, char **argv)
-{
+void write_specific_content(char *content_type, int newsockfd, FILE *fp);
+
+
+
+int main(int argc, char **argv) {
+
 	int sockfd, newsockfd, portno;// clilen;
-	char buffer[2006];
+	char buffer[BUFFER_SIZE];
 	struct sockaddr_in serv_addr, cli_addr;
-	socklen_t clilen;
+	
 	int n;
 
 	if (argc < 3) 
@@ -69,7 +78,7 @@ int main(int argc, char **argv)
 	
 	listen(sockfd,5);
 	
-	clilen = sizeof(cli_addr);
+	
 
 	/* Accept a connection - block until a connection is ready to
 	 be accepted. Get back a new file descriptor to communicate on. */
@@ -84,12 +93,12 @@ int main(int argc, char **argv)
 		}
 
 		
-		bzero(buffer,2006);
+		bzero(buffer, BUFFER_SIZE);
 
 		/* Read characters from the connection,
 			then process */
 		
-		n = read(newsockfd, buffer, 2005);
+		n = read(newsockfd, buffer, BUFFER_SIZE-1);
 
 
 		if (n < 0) 
@@ -137,83 +146,22 @@ int main(int argc, char **argv)
 	   		char *content_header = "Content-Type: ";
 	   		n =write(newsockfd, content_header, strlen(content_header));
 	   		fprintf(stderr, "%s", content_header);
-	   		int characs =0;
+	   	
+
+
 	   		if(strcmp(context, "css")==0){
 	   			
-	   			char *content_type = "text/css\r\n\r\n";
-	   			fprintf(stderr, "%s", content_type);
-	   			n = write(newsockfd, content_type, strlen(content_type));
-	   			unsigned char *text;
+	   			write_specific_content(CSSCONTENT, newsockfd, fp);
 	   			
-	   			fseek(fp, 0L, SEEK_END);
-	   			unsigned long file_size = ftell(fp);
-	   			rewind(fp);
-	   			text = calloc(1, file_size+1);
-	   			
-	   			if(fread(text, file_size, 1, fp)!=1){
-	   				fprintf(stderr, "WRONG");
-	   			}
-
-	   			n = write(newsockfd, text, strlen(text));
-	   			fprintf(stderr, "%s\r\n", text);
-
-	   			
-	   			fprintf(stderr, "%s\r\n", text);
 	   		} else if(strcmp(context, "html")==0){
-	   			char *content_type = "text/html\r\n\r\n";
-	   			n = write(newsockfd, content_type, strlen(content_type));
-	   			fprintf(stderr, "%s", content_type);
-	   			unsigned char *text;
-	   			
-	   			fseek(fp, 0L, SEEK_END);
-	   			unsigned long file_size = ftell(fp);
-	   			rewind(fp);
-	   			text = calloc(1, file_size+1);
-	   			
-	   			if(fread(text, file_size, 1, fp)!=1){
-	   				fprintf(stderr, "WRONG");
-	   			}
-
-	   			n = write(newsockfd, text, strlen(text));
-
-	   			
-	   			fprintf(stderr, "%s\r\n", text);
+	   			write_specific_content(HTMLCONTENT, newsockfd, fp);
 	   			
 
 	   		} else if(strcmp(context, "jpg")==0){
-	   			char *content_type = "image/jpeg\r\n\r\n";
-	   			fprintf(stderr, "%s", content_type);
-	   			n = write(newsockfd, content_type, strlen(content_type));
-	   			unsigned char *text;
-	   			
-	   			fseek(fp, 0L, SEEK_END);
-	   			unsigned long file_size = ftell(fp);
-	   			rewind(fp);
-	   			text = calloc(1, file_size+1);
-	   			
-	   			if(fread(text, file_size, 1, fp)!=1){
-	   				fprintf(stderr, "WRONG");
-	   			}
-
-	   			n = write(newsockfd, text, file_size);
-	   			fprintf(stderr, "%s\r\n", text);
+	   			write_specific_content(JPGCONTENT, newsockfd, fp);
 	   		} else if(strcmp(context, "js")==0){
-	   			char *content_type = "application/javascript\r\n\r\n";
-	   			fprintf(stderr, "%s", content_type);
-	   			n = write(newsockfd, content_type, strlen(content_type));
-	   			unsigned char *text;
+	   			write_specific_content(JSCONTENT, newsockfd, fp);
 	   			
-	   			fseek(fp, 0L, SEEK_END);
-	   			unsigned long file_size = ftell(fp);
-	   			rewind(fp);
-	   			text = calloc(1, file_size+1);
-	   			
-	   			if(fread(text, file_size, 1, fp)!=1){
-	   				fprintf(stderr, "WRONG");
-	   			}
-
-	   			n = write(newsockfd, text, strlen(text));
-	   			fprintf(stderr, "%s\r\n", text);
 	   		} else {
 	   			fprintf(stderr, "Not supported \n");
 	   		}
@@ -240,4 +188,25 @@ int main(int argc, char **argv)
 		
 	}
 	return 0; 
+}
+
+void
+write_specific_content(char *content_type, int newsockfd, FILE *fp) {
+
+	
+
+	int n = write(newsockfd, content_type, strlen(content_type));
+	unsigned char *text;
+	fseek(fp, 0L, SEEK_END);
+	unsigned long file_size = ftell(fp);
+	rewind(fp);
+	text = calloc(1, file_size+1);
+	if(fread(text, file_size, 1, fp)!=1){
+		fprintf(stderr, "WRONG");
+	}
+	if(strcmp(content_type, JPGCONTENT)==0){
+		n = write(newsockfd, text, file_size);
+	} else {
+		n = write(newsockfd, text, strlen(text));
+	}
 }
