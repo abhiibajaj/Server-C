@@ -15,6 +15,11 @@ The port number is passed as an argument
 
 #define BUFFER_SIZE 2048
 
+#define HTTPNOTFOUND "HTTP/1.0 404\r\n"
+#define HTTPFOUND "HTTP/1.0 200 OK\r\n"
+
+#define CONTENTHEADER "Content-Type: "
+
 #define HTML "html"
 #define CSS "css"
 #define JPG "jpg"
@@ -25,6 +30,8 @@ The port number is passed as an argument
 #define JPGCONTENT "image/jpeg\r\n\r\n"
 #define JSCONTENT "application/javascript\r\n\r\n"
 
+
+void write_http_response(char *final_path, int newsockfd);
 void write_body_content(char *context, int newsockfd, FILE *fp);
 void write_specific_content(char *content_type, int newsockfd, FILE *fp);
 
@@ -34,7 +41,7 @@ int main(int argc, char **argv) {
 
 	int sockfd, newsockfd, portno;// clilen;
 	char buffer[BUFFER_SIZE];
-	struct sockaddr_in serv_addr, cli_addr;
+	struct sockaddr_in serv_addr;
 	
 	int n;
 
@@ -90,11 +97,11 @@ int main(int argc, char **argv) {
 	/* Accept a connection - block until a connection is ready to
 	 be accepted. Get back a new file descriptor to communicate on. */
 	while(1){
+
 		newsockfd = accept(	sockfd, (struct sockaddr *)NULL, 
 							NULL);
 
-		if (newsockfd < 0) 
-		{
+		if (newsockfd < 0)  {
 			perror("ERROR on accept");
 			exit(1);
 		}
@@ -108,77 +115,66 @@ int main(int argc, char **argv) {
 		n = read(newsockfd, buffer, BUFFER_SIZE-1);
 
 
-		if (n < 0) 
-		{
+		if (n < 0) {
 			perror("ERROR reading from socket");
 			exit(1);
 		}
 		
-
-		
-		int inputLength = strlen(buffer);
-		char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
-		strncpy(inputCopy, buffer, inputLength);
-
 		const char *delimitter = " ";
 		
-		char *get;
+		
 		char *path;
 		
 
-		get = strtok(buffer, delimitter);
+		strtok(buffer, delimitter);
+
 		path = strtok(NULL, delimitter);
+
 		char *final_path = malloc(strlen(absolute_path)+strlen(path)+1);
 
 		strcpy(final_path, absolute_path);
 		strcat(final_path, path);
 		
+		write_http_response(final_path, newsockfd);
 	  
-	    char *wrong = "HTTP/1.0 404\r\n";
-	    char *right = "HTTP/1.0 200 OK\r\n";
-
-	   	FILE *fp;
-	   	if((fp = fopen(final_path, "r"))==NULL){
-	   		
-	   		n =write(newsockfd, wrong, strlen(wrong));
-	   		
-
-	   	} else {
-	   		char *context;
-	   		char *type_delimitter = ".";
-	   		char *file_type =  strtok_r(final_path, type_delimitter, &context);
-	   		
-	   		n =write(newsockfd, right, strlen(right));
-	   		fprintf(stderr, "%s", right);
-	   		char *content_header = "Content-Type: ";
-	   		n =write(newsockfd, content_header, strlen(content_header));
-	   		fprintf(stderr, "%s", content_header);
-	   	
-
-	   		write_body_content(context, newsockfd, fp);
-	   		
-	   	
-	   	}
 	    
+	  
 
-
-
-
-	    
+	   	
 		
 		
-		if (n < 0) 
-		{
-			perror("ERROR writing to socket");
-			exit(1);
-		}
+		
 		
 		/* close socket */
 		
 		close(newsockfd);
 		
 	}
+	close(sockfd);
 	return 0; 
+}
+
+void
+write_http_response(char *final_path, int newsockfd){
+	int n;
+	FILE *fp;
+	if((fp = fopen(final_path, "r"))==NULL){
+		n =write(newsockfd, HTTPNOTFOUND, strlen(HTTPNOTFOUND));
+	} else {
+		n =write(newsockfd, HTTPFOUND, strlen(HTTPFOUND));
+
+		char *context;
+		char *type_delimitter = ".";
+   		strtok_r(final_path, type_delimitter, &context);
+  		
+   		n =write(newsockfd, CONTENTHEADER, strlen(CONTENTHEADER));
+	   		
+	   	
+
+  		write_body_content(context, newsockfd, fp);
+	   		
+	   	
+   	} 
 }
 
 void
@@ -212,9 +208,9 @@ write_specific_content(char *content_type, int newsockfd, FILE *fp) {
 	if(fread(text, file_size, 1, fp)!=1){
 		fprintf(stderr, "WRONG");
 	}
-	if(strcmp(content_type, JPGCONTENT)==0){
-		n = write(newsockfd, text, file_size);
-	} else {
-		n = write(newsockfd, text, strlen(text));
+	n = write(newsockfd, text, file_size);
+	if (n < 0) {
+		perror("ERROR writing to socket");
+		exit(1);
 	}
 }
