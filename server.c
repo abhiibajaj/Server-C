@@ -14,11 +14,18 @@ The port number is passed as an argument
 #include <unistd.h>
 
 #define BUFFER_SIZE 2048
+
+#define HTML "html"
+#define CSS "css"
+#define JPG "jpg"
+#define JS "js"
+
 #define HTMLCONTENT "text/html\r\n\r\n"
 #define CSSCONTENT "text/css\r\n\r\n"
 #define JPGCONTENT "image/jpeg\r\n\r\n"
 #define JSCONTENT "application/javascript\r\n\r\n"
 
+void write_body_content(char *context, int newsockfd, FILE *fp);
 void write_specific_content(char *content_type, int newsockfd, FILE *fp);
 
 
@@ -148,23 +155,7 @@ int main(int argc, char **argv) {
 	   		fprintf(stderr, "%s", content_header);
 	   	
 
-
-	   		if(strcmp(context, "css")==0){
-	   			
-	   			write_specific_content(CSSCONTENT, newsockfd, fp);
-	   			
-	   		} else if(strcmp(context, "html")==0){
-	   			write_specific_content(HTMLCONTENT, newsockfd, fp);
-	   			
-
-	   		} else if(strcmp(context, "jpg")==0){
-	   			write_specific_content(JPGCONTENT, newsockfd, fp);
-	   		} else if(strcmp(context, "js")==0){
-	   			write_specific_content(JSCONTENT, newsockfd, fp);
-	   			
-	   		} else {
-	   			fprintf(stderr, "Not supported \n");
-	   		}
+	   		write_body_content(context, newsockfd, fp);
 	   		
 	   	
 	   	}
@@ -188,6 +179,23 @@ int main(int argc, char **argv) {
 		
 	}
 	return 0; 
+}
+
+void
+write_body_content(char *context, int newsockfd, FILE *fp){
+
+	if(strcmp(context, CSS)==0){
+		write_specific_content(CSSCONTENT, newsockfd, fp);		
+	} else if(strcmp(context, HTML)==0){
+	   	write_specific_content(HTMLCONTENT, newsockfd, fp);
+	} else if(strcmp(context, JPG)==0){
+	   	write_specific_content(JPGCONTENT, newsockfd, fp);
+	} else if(strcmp(context, JS)==0){
+	   	write_specific_content(JSCONTENT, newsockfd, fp);	
+	} else {
+	   	fprintf(stderr, "Not supported \n");
+	}
+	   		
 }
 
 void
