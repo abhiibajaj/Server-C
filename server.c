@@ -35,7 +35,7 @@ The port number is passed as an argument
 void write_http_response(char *final_path, int newsockfd);
 void write_body_content(char *context, int newsockfd, FILE *fp);
 void write_specific_content(char *content_type, int newsockfd, FILE *fp);
-
+char* get_final_path(char *buffer, char* absolute_path);
 
 
 int main(int argc, char **argv) {
@@ -121,36 +121,16 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		
-		const char *delimitter = " ";
+		char *final_path = get_final_path(buffer, 	absolute_path);
 		
 		
-		char *path;
-		
-
-		strtok(buffer, delimitter);
-
-		path = strtok(NULL, delimitter);
-
-		char *final_path = malloc(strlen(absolute_path)+strlen(path)+1);
-
-		strcpy(final_path, absolute_path);
-		strcat(final_path, path);
-		
-		write_http_response(final_path, newsockfd);
-	  
-	    
-	  
-
-	   	
-		
-		
-		
-		
+		write_http_response(final_path, newsockfd);		
 		/* close socket */
 		
 		close(newsockfd);
 		
 	}
+
 	close(sockfd);
 	return 0; 
 }
@@ -176,6 +156,23 @@ write_http_response(char *final_path, int newsockfd){
 	   		
 	   	
    	} 
+}
+
+char* 
+get_final_path(char *buffer, char* absolute_path) {
+
+	char *delimitter = " ";
+	char *relative_path;
+
+	strtok(buffer, delimitter);
+
+	relative_path = strtok(NULL, delimitter);
+
+	char *final_path = malloc(strlen(absolute_path)+strlen(relative_path)+1);
+
+	strcpy(final_path, absolute_path);
+	strcat(final_path, relative_path);
+	return final_path;
 }
 
 void
