@@ -12,6 +12,7 @@ The port number is passed as an argument
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 2048
 #define RUNNING 1
@@ -31,19 +32,29 @@ The port number is passed as an argument
 #define JPGCONTENT "image/jpeg\r\n\r\n"
 #define JSCONTENT "application/javascript\r\n\r\n"
 
+#define MAXREQUESTS 2
 
+void* handle_request(void *httpdata);
 void write_http_response(char *final_path, int newsockfd);
 void write_body_content(char *context, int newsockfd, FILE *fp);
 void write_specific_content(char *content_type, int newsockfd, FILE *fp);
 char* get_final_path(char *buffer, char* absolute_path);
 
+pthread_mutex_t lock;
+
+typedef struct {
+	int newsockfd;
+	char *absolute_path;
+} thread_data_t;
 
 int main(int argc, char **argv) {
 
 	int sockfd, newsockfd, portno;// clilen;
 	char buffer[BUFFER_SIZE];
 	struct sockaddr_in serv_addr;
-	
+	pthread_t tid1;
+	thread_data_t httpdata;
+
 	int n;
 
 	if (argc < 3) 
@@ -60,8 +71,7 @@ int main(int argc, char **argv) {
 	
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (sockfd < 0) 
-	{
+	if (sockfd < 0) {
 		perror("ERROR opening socket");
 		exit(1);
 	}
@@ -82,8 +92,7 @@ int main(int argc, char **argv) {
 	 /* Bind address to the socket */
 	
 	if (bind(sockfd, (struct sockaddr *) &serv_addr,
-			sizeof(serv_addr)) < 0) 
-	{
+			sizeof(serv_addr)) < 0) {
 		perror("ERROR on binding");
 		exit(1);
 	}
@@ -91,7 +100,7 @@ int main(int argc, char **argv) {
 	/* Listen on socket - means we're ready to accept connections - 
 	 incoming connection requests will be queued */
 	
-	listen(sockfd,5);
+	listen(sockfd, MAXREQUESTS);
 	
 	
 
@@ -107,33 +116,66 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 
+		httpdata.newsockfd = newsockfd;
 		
-		bzero(buffer, BUFFER_SIZE);
+		
+		httpdata.absolute_path = malloc(strlen(absolute_path));
+		strcpy(httpdata.absolute_path, absolute_path);
 
-		/* Read characters from the connection,
-			then process */
 		
-		n = read(newsockfd, buffer, BUFFER_SIZE-1);
+		if(pthread_create(&tid1, NULL, handle_request, (void*) &httpdata)) {
+      		printf("\n Error creating thread 1");
+      		exit(1);
+   		}
 
-
-		if (n < 0) {
-			perror("ERROR reading from socket");
-			exit(1);
-		}
-		
-		char *final_path = get_final_path(buffer, 	absolute_path);
-		
-		
-		write_http_response(final_path, newsockfd);		
-		/* close socket */
-		
-		close(newsockfd);
-		
+			
 	}
 
 	close(sockfd);
 	return 0; 
 }
+
+void* handle_request(void *httpdata){
+
+	int newsockfd;
+	char *absolute_path;
+	char buffer[BUFFER_SIZE];
+	int n;
+	
+	thread_data_t *inside_thread_data = (thread_data_t*) httpdata;
+	newsockfd = inside_thread_data->newsockfd;
+	absolute_path = inside_thread_data->absolute_path;
+	
+	fprintf(stderr, "%s\n", absolute_path);
+	
+	bzero(buffer, BUFFER_SIZE);
+
+
+	/*Read characters from the connection,
+		then process */
+		
+	n = read(newsockfd, buffer, BUFFER_SIZE-1);
+
+
+	if (n < 0) {
+		perror("ERROR reading from socket");
+		exit(1);
+	}
+	char *final_path = get_final_path(buffer, absolute_path);
+	fprintf(stderr, "%s\n", final_path);
+		
+	write_http_response(final_path, newsockfd);		
+	/* close socket */
+	
+	close(newsockfd);	
+	return NULL;
+	
+}	
+
+
+
+
+
 
 void
 write_http_response(char *final_path, int newsockfd){

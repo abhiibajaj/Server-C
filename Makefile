@@ -1,6 +1,6 @@
 ##Adapted from http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
 CC=gcc
-CFLAGS=-Wall -Wextra -std=gnu99 -I. -O3
+CFLAGS=-Wall -Wextra -std=gnu99 -I. -O3 -lpthread
 OBJ = server.o 
 EXE = my_server
 
