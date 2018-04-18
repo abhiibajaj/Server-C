@@ -34,13 +34,20 @@ The port number is passed as an argument
 
 #define MAXREQUESTS 2
 
+#define WRITEERROR "ERROR writing to socket"
+#define ACCEPTERROR "ERROR on accept"
+#define READERROR "ERROR reading from socket"
+#define OPENERROR "ERROR opening socket"
+#define BINDERROR "ERROR on binding"
+
 void* handle_request(void *httpdata);
 void write_http_response(char *final_path, int newsockfd);
 void write_body_content(char *context, int newsockfd, FILE *fp);
 void write_specific_content(char *content_type, int newsockfd, FILE *fp);
 char* get_final_path(char *buffer, char* absolute_path);
+void check_request(int n, char *message);
 
-pthread_mutex_t lock;
+
 
 typedef struct {
 	int newsockfd;
@@ -49,16 +56,14 @@ typedef struct {
 
 int main(int argc, char **argv) {
 
-	int sockfd, newsockfd, portno;// clilen;
-	char buffer[BUFFER_SIZE];
+	int sockfd, newsockfd, portno;
 	struct sockaddr_in serv_addr;
 	pthread_t tid1;
 	thread_data_t httpdata;
 
 	int n;
 
-	if (argc < 3) 
-	{
+	if (argc < 3) {
 		fprintf(stderr,"ERROR, no port or path provided\n");
 		exit(1);
 	}
@@ -70,11 +75,7 @@ int main(int argc, char **argv) {
 	 /* Create TCP socket */
 	
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-	if (sockfd < 0) {
-		perror("ERROR opening socket");
-		exit(1);
-	}
+	check_request(sockfd, OPENERROR);
 
 	
 	bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -91,11 +92,9 @@ int main(int argc, char **argv) {
 
 	 /* Bind address to the socket */
 	
-	if (bind(sockfd, (struct sockaddr *) &serv_addr,
-			sizeof(serv_addr)) < 0) {
-		perror("ERROR on binding");
-		exit(1);
-	}
+	n = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+	check_request(n, BINDERROR);
+
 	
 	/* Listen on socket - means we're ready to accept connections - 
 	 incoming connection requests will be queued */
@@ -110,11 +109,8 @@ int main(int argc, char **argv) {
 
 		newsockfd = accept(	sockfd, (struct sockaddr *)NULL, 
 							NULL);
-
-		if (newsockfd < 0)  {
-			perror("ERROR on accept");
-			exit(1);
-		}
+		check_request(newsockfd, ACCEPTERROR);
+		
 
 		httpdata.newsockfd = newsockfd;
 		
@@ -146,7 +142,7 @@ void* handle_request(void *httpdata){
 	newsockfd = inside_thread_data->newsockfd;
 	absolute_path = inside_thread_data->absolute_path;
 	
-	fprintf(stderr, "%s\n", absolute_path);
+	
 	
 	bzero(buffer, BUFFER_SIZE);
 
@@ -155,18 +151,15 @@ void* handle_request(void *httpdata){
 		then process */
 		
 	n = read(newsockfd, buffer, BUFFER_SIZE-1);
+	check_request(n, READERROR);
 
-
-	if (n < 0) {
-		perror("ERROR reading from socket");
-		exit(1);
-	}
+	
 	char *final_path = get_final_path(buffer, absolute_path);
-	fprintf(stderr, "%s\n", final_path);
+	
 		
 	write_http_response(final_path, newsockfd);		
+
 	/* close socket */
-	
 	close(newsockfd);	
 	return NULL;
 	
@@ -183,16 +176,19 @@ write_http_response(char *final_path, int newsockfd){
 	FILE *fp;
 	if((fp = fopen(final_path, "r"))==NULL){
 		n =write(newsockfd, HTTPNOTFOUND, strlen(HTTPNOTFOUND));
+		check_request(n, WRITEERROR);
 	} else {
+
 		n =write(newsockfd, HTTPFOUND, strlen(HTTPFOUND));
+		check_request(n, WRITEERROR);
 
 		char *context;
 		char *type_delimitter = ".";
-   		strtok_r(final_path, type_delimitter, &context);
+
+ 		strtok_r(final_path, type_delimitter, &context);
   		
-   		n =write(newsockfd, CONTENTHEADER, strlen(CONTENTHEADER));
-	   		
-	   	
+   		n = write(newsockfd, CONTENTHEADER, strlen(CONTENTHEADER));
+	   	check_request(n, WRITEERROR);	   	
 
   		write_body_content(context, newsockfd, fp);
 	   		
@@ -229,7 +225,8 @@ write_body_content(char *context, int newsockfd, FILE *fp){
 	} else if(strcmp(context, JS)==0){
 	   	write_specific_content(JSCONTENT, newsockfd, fp);	
 	} else {
-	   	fprintf(stderr, "Not supported \n");
+	   	perror("Not supported type");
+	   	exit(1);
 	}
 	   		
 }
@@ -237,20 +234,29 @@ write_body_content(char *context, int newsockfd, FILE *fp){
 void
 write_specific_content(char *content_type, int newsockfd, FILE *fp) {
 
-	
-
 	int n = write(newsockfd, content_type, strlen(content_type));
+	check_request(n, WRITEERROR);
+
 	unsigned char *text;
 	fseek(fp, 0L, SEEK_END);
 	unsigned long file_size = ftell(fp);
 	rewind(fp);
+
 	text = calloc(1, file_size+1);
+
 	if(fread(text, file_size, 1, fp)!=1){
-		fprintf(stderr, "WRONG");
+		perror("Error reading file");
+		exit(1);
 	}
+
 	n = write(newsockfd, text, file_size);
+	check_request(n, WRITEERROR);
+}
+
+void check_request(int n, char* message){
 	if (n < 0) {
-		perror("ERROR writing to socket");
+		perror(message);
 		exit(1);
 	}
 }
+
