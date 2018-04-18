@@ -5,6 +5,9 @@ This was adapted from the server.c file provided in Workshop 4
 of Computer Systems
 
  To compile: make
+
+ Name: Arpit Bajaj
+ Login: bajaja@student.unimelb.edu.au
 */
 
 #include <stdio.h>

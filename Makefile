@@ -1,4 +1,6 @@
 ##Adapted from http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
+##Name: Arpit Bajaj
+##Login: bajaja@student.unimelb.edu.au
 CC=gcc
 CFLAGS=-Wall -Wextra -std=gnu99 -I. -O3 -lpthread
 OBJ = server.o 
